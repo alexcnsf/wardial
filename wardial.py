@@ -140,7 +140,8 @@ def netmask_to_ips(netmask):
 async def is_server_at_host(session, host, schema='http'):
     '''
     Return True if a web server at `host` responds to the specified `schema`.
-    The `session` variable is assumed to be a properly initialized `aiohttp.ClientSession` object.
+    The `session` variable is assumed to be a properly initialized
+    `aiohttp.ClientSession` object.
     '''
     url = schema + '://' + host
     try:
@@ -173,12 +174,15 @@ async def _wardial_async(hosts, max_connections=500, timeout=10, schema='http'):
     >>> loop.close()
 
     NOTE:
-    Testing IO functions is made extra hard because they rely on IO performing correctly.
-    The tests above won't work if the google.com or microsoft.com webpages go down.
+    Testing IO functions is made extra hard because they rely on IO
+    performing correctly.
+    The tests above won't work if the google.com or microsoft.com webpages
+    go down.
 
     NOTE:
     This is a helper function for the wardial function.
-    In python, functions prefixed with an underscore are intended to be thought of as "private" or "internal" functions,
+    In python, functions prefixed with an underscore are intended to be
+    thought of as "private" or "internal" functions,
     and not as functions that should be called directly by a user.
     '''
     connector = aiohttp.TCPConnector(
@@ -204,10 +208,13 @@ async def _wardial_async(hosts, max_connections=500, timeout=10, schema='http'):
         # The following code is "correct" in the sense that it gets the right results.
         # The problem is that it is not concurrent.
         # Modify the code to use the `asyncio.gather` function to enable concurrency.
-        results = []
-        for host in hosts:
-            results.append(await is_server_at_host(session,host))
+        coroutines = [is_server_at_host(session, host) for host in hosts]
+        results = await asyncio.gather(*coroutines)
         return results
+#        results = []
+#        for host in hosts:
+#            results.append(await is_server_at_host(session,host))
+#        return results
 
 
 def wardial(hosts, **kwargs):
@@ -227,7 +234,14 @@ def wardial(hosts, **kwargs):
     # and use this event loop to call the `_wardial_async` function.
     # Ensure that all of the kwargs parameters get passed to `_wardial_async`.
     # You will have to do some post-processing of the results of this function to convert the output.
-    return []
+    host = list(hosts)
+    loop = asyncio.new_event_loop()
+    results = loop.run_until_complete(_wardial_async(host))
+    wr = []
+    for elem in range(len(results)):
+        if results[elem] == True:
+            wr.append(hosts[elem])
+    return wr 
 
 if __name__=='__main__':
 
